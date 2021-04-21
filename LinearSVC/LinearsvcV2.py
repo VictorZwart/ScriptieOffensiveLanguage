@@ -1,3 +1,7 @@
+#!/usr/bin/python3
+# Author: Victor Zwart, s3746186
+# Date: 21/04/2021
+
 import pandas as pd
 import numpy as np
 import sys
