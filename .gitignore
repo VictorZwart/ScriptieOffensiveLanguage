@@ -6,3 +6,4 @@
 .idea/ScriptieOffensiveLanguage.iml
 .idea/vcs.xml
 LinearSVC/offense2check_DALC_abusive.csv
+/BiLSTM/offense2check_DALC_abusive.csv
