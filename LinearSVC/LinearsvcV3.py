@@ -15,10 +15,12 @@ import re
 import sys
 import warnings
 import collections
+import emoji
 
 from collections import defaultdict
 from nltk.metrics import precision, recall
-from featx import bag_of_words, bag_of_non_stopwords, high_information_words, bag_of_bigrams_non_stopwords, bag_of_bigrams_words
+from featx import bag_of_words, bag_of_non_stopwords, high_information_words, bag_of_bigrams_non_stopwords, \
+    bag_of_bigrams_words
 from nltk.classify.scikitlearn import SklearnClassifier
 from nltk.tokenize import word_tokenize
 from os import listdir
@@ -52,20 +54,20 @@ def preprocess(line):
     # first lowercase:
     line = line.lower()
 
-    #remove mentions:
-    line = re.sub(r'(@\w+)','MENTION', line)
+    # remove mentions:
+    line = re.sub(r'(@\w+)', 'MENTION', line)
 
-    #remove url's:
-    line = re.sub(r'(https\S+)','URL',line)
+    # remove url's:
+    line = re.sub(r'(https\S+)', 'URL', line)
 
-    #remove all numbers
-    line  = re.sub(r'[0-9]+', 'NUMBER', line)
+    # remove all numbers
+    line = re.sub(r'[0-9]+', 'NUMBER', line)
 
-    #remove all hashtags
-    line  = re.sub(r'#', '', line)
-
+    # remove all hashtags
+    line = re.sub(r'#', '', line)
 
     return line
+
 
 def read_dataset(dataset_csv, genres_dict):
     """
@@ -76,6 +78,7 @@ def read_dataset(dataset_csv, genres_dict):
     """
 
     feats = list()
+    text_list = list()
     offensiveness = ['NOT', 'IMPLICIT', 'EXPLICIT']
 
     with open(dataset_csv, 'r', encoding='UTF-8') as d:
@@ -90,6 +93,7 @@ def read_dataset(dataset_csv, genres_dict):
             # print(row)
             id, text, explicitness = row[0], row[1], offensiveness.index(row[6])
             text = preprocess(text)
+            text_list.append(text)
             tokens = word_tokenize(text)
 
             # Remove punctuation from the tokens:
@@ -99,8 +103,7 @@ def read_dataset(dataset_csv, genres_dict):
             tokens = list(filter(None, tokens))
 
             # Applying a combination of taking only non-stopwords bigrams, while all words being in lowercase:
-            lc_tokens = [token.lower() for token in tokens]  # lowercase all the tokens
-            bag = bag_of_bigrams_non_stopwords(lc_tokens, 'english')
+            bag = bag_of_bigrams_non_stopwords(tokens, 'english')
             feats.append((bag, explicitness))
 
             # Increase review count for genre
@@ -111,7 +114,7 @@ def read_dataset(dataset_csv, genres_dict):
 
     print("  Total: {} reviews read".format(len(feats)))
     # print(feats)
-    return feats
+    return feats, text_list
 
 
 def high_info_feats(feats, genres_dict):
@@ -167,7 +170,8 @@ def evaluation(classifier, test_feats, genres_dict):
         if precisions[genre] is None:
             print(" |%-11s|%-11s|%-11s|%-11s|" % (genres_dict[genre], "NA", "NA", "NA"))
         else:
-            print(" |%-11s|%-11f|%-11f|%-11f|" % (genres_dict[genre], precisions[genre], recalls[genre], f_measures[genre]))
+            print(" |%-11s|%-11f|%-11f|%-11f|" % (
+            genres_dict[genre], precisions[genre], recalls[genre], f_measures[genre]))
     print(" |-----------|-----------|-----------|-----------|")
 
 
@@ -222,6 +226,50 @@ def top_N_bigrams_per_genre(datacsv, genres_dict, n):
         print(". {}".format('\n. '.join(bigrams[-n:])))
 
 
+def wrong_classified(classifier, feats, text_list, wrong_csv):
+    # print(dev_feats)
+    wrong_dict = {}
+    with open(wrong_csv, 'r', encoding='UTF-8') as d:
+        reader = csv.reader(d, delimiter='\t')
+        headers = next(d)  # Skip the headers
+        for row in reader:
+
+            text, golden, bilstm, cnn, LinearSVC = row
+            wrong_dict[text] = [golden, bilstm, cnn, LinearSVC]
+    print(wrong_dict)
+
+
+    predictions = classifier.classify_many([fs for (fs, l) in feats])
+    gold_labels = [l for (fs, l) in feats]
+    index = 0
+    for pred, real in zip(predictions, gold_labels):
+        if pred != real:
+            text = text_list[index]
+            if text in wrong_dict: # If the text is already in the dictionary
+                other_preds = wrong_dict[text]
+                other_preds[3] = pred # Linearsvc is on index 3
+                wrong_dict[text] = other_preds
+            else: # if the key doesnt exist yet then the other classifiers got it right.
+                wrong_dict[text] = [real, real, real, pred]
+            # print(text[index], pred, real)
+
+        index += 1
+
+    fields = ["text", "golden", 'bilstm', 'cnn', 'LinearSVC']
+    headers = {'text','golden','bilstm', 'cnn', 'LinearSVC' }
+    with open('wrong_final.csv', 'w') as final_file:
+        writer = csv.writer(final_file, delimiter='\t')
+        writer.writerow(fields)
+        for text, pred in wrong_dict.items():
+            text = de_emojify(text)
+            row = [text, pred[0], pred[1], pred[2], pred[3]]
+            print(row)
+            writer.writerow(row)
+    final_file.close()
+
+def de_emojify(text):
+    return emoji.get_emoji_regexp().sub(r'', text)
+
 def main():
     # The code below is to suppress the Convergence warning when a small max_iter value is given to scikit.
     if not sys.warnoptions:
@@ -230,14 +278,15 @@ def main():
 
     # Get dataset from input, read it and get feats from it
     train_csv, dev_csv, test_csv = sys.argv[1], sys.argv[2], sys.argv[3]
+    wrong_csv = sys.argv[4]
     genres_dict = {0: "NOT", 1: "IMPLICIT", 2: "EXPLICIT"}
 
     print("\n##### Reading training data:")
-    train_feats = read_dataset(train_csv, genres_dict)
+    train_feats, train_text = read_dataset(train_csv, genres_dict)
     print("\n##### Reading development data:")
-    dev_feats = read_dataset(dev_csv, genres_dict)
+    dev_feats, dev_text = read_dataset(dev_csv, genres_dict)
     # print("\n##### Reading test data:")
-    # test_feats = read_dataset(test_csv, genres_dict)
+    # test_feats, test_text = read_dataset(test_csv, genres_dict)
 
     # Use high information words & high information feats:
     train_hifeats = high_info_feats(train_feats, genres_dict)
@@ -254,7 +303,7 @@ def main():
     evaluation(classifier.train(train_hifeats), dev_feats, genres_dict)
     print_confusion_matrix(classifier, dev_feats, genres_dict)
     # top_N_bigrams_per_genre(train_csv, genres_dict, 10)
-
+    wrong_classified(classifier, dev_feats, dev_text, wrong_csv)
 
 if __name__ == '__main__':
     main()
