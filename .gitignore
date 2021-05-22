@@ -7,3 +7,7 @@
 .idea/vcs.xml
 LinearSVC/offense2check_DALC_abusive.csv
 /BiLSTM/offense2check_DALC_abusive.csv
+LinearSVC/test_final.csv
+LinearSVC/batch_2_train_victor.csv
+LinearSVC/train_final.csv
+LinearSVC/dev_final.csv
