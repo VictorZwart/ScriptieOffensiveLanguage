@@ -11,3 +11,5 @@ LinearSVC/test_final.csv
 LinearSVC/batch_2_train_victor.csv
 LinearSVC/train_final.csv
 LinearSVC/dev_final.csv
+LinearSVC/wrong.csv
+LinearSVC/wrong_final.csv
