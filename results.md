@@ -20,6 +20,17 @@ NOT: 0.87
 IMPLICIT: 0.33
 EXPLICIT: 0.59
 
+### LinearSVC on test set:
+
+              precision    recall  f1-score   support
+
+           0       0.78      0.98      0.87      2072
+           1       0.85      0.51      0.63       702
+           2       0.37      0.10      0.16       334
+
+        accuracy                        0.78      3108
+        macro avg   0.67      0.53      0.55      3108
+        weighted avg0.75      0.78      0.74      3108
 
 ## BiLSTM
 
@@ -28,10 +39,10 @@ First time running without preprocessing for explicitness:
 
 accuracy: 0.9426
 
-###BiLSTM V2 on the real dev set
+### BiLSTM V2 on the real dev set
 acc: 0.7933
 
-###BiLSTM V3 real dev set with PP
+### BiLSTM V3 real dev set with PP
 acc:  74.34%
 
 ### BiLSTM on test set:
@@ -99,10 +110,10 @@ average: 0.7451
 First time running without preprocessing for explicitness:
 accuracy: 0.7841
 
-###CNN V2 on the real dev set
+### CNN V2 on the real dev set
 acc: 0.7990
 
-###CNN V3 real dev set with PP
+### CNN V3 real dev set with PP
 acc: 73.30%
 
 ### CNN On test set:
