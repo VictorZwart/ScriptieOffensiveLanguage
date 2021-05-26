@@ -4,11 +4,11 @@ This will be my repository for my scriptie. This will make for good version cont
 ## Preface
 
 ## LinearSVC
-We wanted to use a simple yet thorough machine learning model for our baseline. We looked at Support Vector Machines and finally decided to use a Linear Support Vector Classification (LinearSVC) model to compare the other two models to. We believed this to be a good and simple machine learning model. State-of-the-art results were already achieved by SVM's for many text classification tasks \citep{zampieri2018language}. In addition to the preprocessing steps we took for all our classifiers we also used the following features:
-    - bag of words
-    - bigrams
-    - remove punctuation
-    - tokenization
+We wanted to use a simple yet thorough machine learning model for our baseline. We looked at Support Vector Machines and finally decided to use a Linear Support Vector Classification (LinearSVC) model to compare the other two models to. We believed this to be a good and simple machine learning model. State-of-the-art results were already achieved by SVM's for many text classification tasks. In addition to the preprocessing steps we took for all our classifiers we also used the following features:\
+    - bag of words\
+    - bigrams\
+    - remove punctuation\
+    - tokenization\
 Firstly we put the text in bag of words to make data processing and feature extraction easier. However, we did not only put the unigrams in the bags but also the bigrams of the sentence. By using a combination of unigrams and bigrams we ensured that as little information of the sentence was lost. We also decided to remove the punctuation from the sentence, since this did not contribute to the explicitness features.
 
 ## BiLSTM
